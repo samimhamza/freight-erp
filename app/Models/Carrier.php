@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Models;
+
+use App\Traits\DeleteTrait;
+use App\Traits\LogTraits;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
+use Stringable;
+
+class Carrier extends Model implements Stringable
+{
+    use DeleteTrait,
+        HasFactory,
+        LogsActivity,
+        LogTraits,
+        SoftDeletes;
+
+    protected $guarded = ['id'];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logExcept(['created_at', 'updated_at', 'deleted_at', 'created_by', 'updated_by', 'deleted_by'])
+            ->logOnlyDirty()
+            ->useLogName('Carrier');
+    }
+
+    public function masterBills(): HasMany
+    {
+        return $this->hasMany(MasterBill::class);
+    }
+
+    public function remittanceAdvices(): HasMany
+    {
+        return $this->hasMany(RemittanceAdvice::class);
+    }
+
+    public function remittanceInvoices(): HasMany
+    {
+        return $this->remittanceAdvices();
+    }
+
+    public function payableInvoices(): HasMany
+    {
+        return $this->remittanceAdvices();
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function deletedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'deleted_by');
+    }
+
+    public function __toString(): string
+    {
+        return (string) ($this->name ?? '');
+    }
+}
