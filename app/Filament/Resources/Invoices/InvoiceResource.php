@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Invoices;
 
+use App\Enums\InvoiceStatus;
 use App\Filament\Resources\Invoices\Pages\CreateInvoice;
 use App\Filament\Resources\Invoices\Pages\EditInvoice;
 use App\Filament\Resources\Invoices\Pages\ListInvoiceActivities;
@@ -20,6 +21,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Wizard\Step;
 use Filament\Tables\Table;
@@ -70,6 +72,19 @@ class InvoiceResource extends Resource
         ];
     }
 
+    public static function configureDeleteAction(DeleteAction $action): DeleteAction
+    {
+        return $action
+            ->recordTitle(fn ($record) => "Record ({$record?->invoice_number})")
+            ->visible(fn ($record): bool => ! ($record?->trashed() ?? false))
+            ->modal(fn ($record): bool => (bool) ($record?->payments()->exists() ?? false))
+            ->requiresConfirmation(fn ($record): bool => (bool) ($record?->payments()->exists() ?? false))
+            ->modalHeading('Delete')
+            ->modalDescription('This record has already payments, do you really want to delete it?')
+            ->modalIcon('heroicon-o-exclamation-triangle')
+            ->modalIconColor('danger');
+    }
+
     public static function actions(bool $hideView = false): array
     {
         return [
@@ -79,10 +94,20 @@ class InvoiceResource extends Resource
                 ->visible(function (Invoice $record) {
                     return Invoice::showActions($record) && ! $record->trashed();
                 }),
-            DeleteAction::make()->label('')
-                ->recordTitle(fn ($record) => 'Invoice ('.$record->invoice_number.')')
-                ->visible(function (Invoice $record) {
-                    return Invoice::showActions($record) && ! $record->trashed();
+            self::configureDeleteAction(DeleteAction::make()->label('')),
+            Action::make('cancel')
+                ->label('')
+                ->tooltip('Cancel')
+                ->icon('heroicon-o-x-circle')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->modalHeading('Cancel')
+                ->modalDescription(fn ($record): string => 'Are you sure you want to cancel this record? This will update its status to Cancelled.')
+                ->visible(fn ($record): bool => in_array($record->status, [InvoiceStatus::DRAFT, InvoiceStatus::SENT], true) && ! $record->trashed())
+                ->authorize('cancel')
+                ->action(function ($record): void {
+                    $record->update(['status' => InvoiceStatus::CANCELLED]);
+                    Notification::make()->success()->title('Cancelled successfully')->send();
                 }),
             RestoreAction::make()->label(''),
             ForceDeleteAction::make()->label(''),

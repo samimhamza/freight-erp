@@ -4,15 +4,23 @@ namespace App\Traits;
 
 trait DeleteTrait
 {
-    public static function bootDeleteTrait()
+    protected static function bootDeleteTrait()
     {
         static::deleting(function ($model) {
-            $model->deleted_by = @auth()->user()->id;
-            $model->save();
+            if (method_exists($model, 'isForceDeleting') && $model->isForceDeleting()) {
+                return;
+            }
+
+            if (auth()->check() && (in_array('deleted_by', $model->getFillable()) || $model->isFillable('deleted_by'))) {
+                $model->deleted_by = auth()->id();
+                $model->saveQuietly();
+            }
         });
 
         static::restoring(function ($model) {
-            $model->deleted_by = null;
+            if (in_array('deleted_by', $model->getFillable()) || $model->isFillable('deleted_by')) {
+                $model->deleted_by = null;
+            }
         });
     }
 }

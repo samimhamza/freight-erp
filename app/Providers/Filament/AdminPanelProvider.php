@@ -2,11 +2,13 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\EditProfile;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\MenuItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -33,6 +35,14 @@ class AdminPanelProvider extends PanelProvider
             ->favicon(asset('favicon.ico'))
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
+            ->passwordReset()
+            ->profile(EditProfile::class, isSimple: false)
+            ->userMenuItems([
+                'profile' => MenuItem::make()
+                    ->label('Profile & Password')
+                    ->icon('heroicon-o-user-circle')
+                    ->url(fn (): string => EditProfile::getUrl()),
+            ])
             ->spa()
             ->colors([
                 'primary' => Color::Amber,

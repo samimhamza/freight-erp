@@ -112,5 +112,11 @@ class RemittanceAdvicePolicy
             || $authUser->can('Update:RemittanceInvoice')
             || $authUser->can('Update:PayableInvoice');
     }
-}
 
+    public function cancel(AuthUser $authUser, RemittanceAdvice $remittanceAdvice): bool
+    {
+        return $authUser->can('Update:RemittanceAdvice')
+            || $authUser->can('Update:RemittanceInvoice')
+            || $authUser->can('Update:PayableInvoice');
+    }
+}

@@ -81,4 +81,9 @@ class InvoicePolicy
     {
         return $authUser->can('Update:Invoice');
     }
+
+    public function cancel(AuthUser $authUser, Invoice $invoice): bool
+    {
+        return $authUser->can('Update:Invoice');
+    }
 }
