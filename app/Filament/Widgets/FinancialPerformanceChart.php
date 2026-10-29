@@ -346,29 +346,34 @@ class FinancialPerformanceChart extends ChartWidget
         $currentYear = now()->year;
         $filter = $this->filter ?? 'monthly';
 
-        if ($filter === 'yearly') {
-            $startDate = Carbon::create($currentYear - 4, 1, 1)->startOfDay();
-            $endDate = Carbon::create($currentYear, 12, 31)->endOfDay();
-        } else {
-            $startDate = Carbon::create($currentYear, 1, 1)->startOfDay();
-            $endDate = Carbon::create($currentYear, 12, 31)->endOfDay();
-        }
+        $startDate = $filter === 'yearly'
+            ? Carbon::create($currentYear - 4, 1, 1)->startOfDay()
+            : Carbon::create($currentYear, 1, 1)->startOfDay();
+        $endDate = Carbon::create($currentYear, 12, 31)->endOfDay();
 
         $totalInvoiced = 0.0;
         $totalPayables = 0.0;
 
         if ($canViewInvoices) {
-            $invoices = $this->queryInvoiceItems($startDate, $endDate);
-            foreach ($invoices as $item) {
-                $totalInvoiced += $this->calculateItemTotal($item);
-            }
+            $totalInvoiced = (float) (InvoiceItem::query()
+                ->join('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
+                ->whereNull('invoices.deleted_at')
+                ->whereNull('invoice_items.deleted_at')
+                ->where('invoices.status', '!=', InvoiceStatus::CANCELLED->value)
+                ->whereBetween('invoices.invoice_date', [$startDate->toDateString(), $endDate->toDateString()])
+                ->selectRaw('SUM((invoice_items.quantity * invoice_items.amount) + invoice_items.vat) as total')
+                ->value('total') ?? 0.0);
         }
 
         if ($canViewPayables) {
-            $payables = $this->queryPayableInvoiceItems($startDate, $endDate);
-            foreach ($payables as $item) {
-                $totalPayables += $this->calculateItemTotal($item);
-            }
+            $totalPayables = (float) (RemittanceAdviceItem::query()
+                ->join('remittance_advices', 'remittance_advices.id', '=', 'remittance_advice_items.remittance_advice_id')
+                ->whereNull('remittance_advices.deleted_at')
+                ->whereNull('remittance_advice_items.deleted_at')
+                ->where('remittance_advices.status', '!=', InvoiceStatus::CANCELLED->value)
+                ->whereBetween('remittance_advices.advice_date', [$startDate->toDateString(), $endDate->toDateString()])
+                ->selectRaw('SUM((remittance_advice_items.quantity * remittance_advice_items.amount) + remittance_advice_items.vat) as total')
+                ->value('total') ?? 0.0);
         }
 
         return [
@@ -452,6 +457,7 @@ class FinancialPerformanceChart extends ChartWidget
                 'invoice_items.amount',
                 'invoice_items.vat',
             ])
+            ->toBase()
             ->get();
     }
 
@@ -474,6 +480,7 @@ class FinancialPerformanceChart extends ChartWidget
                 'remittance_advice_items.amount',
                 'remittance_advice_items.vat',
             ])
+            ->toBase()
             ->get();
     }
 

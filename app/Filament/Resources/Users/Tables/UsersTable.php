@@ -27,6 +27,7 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with('media'))
             ->columns(self::columns())
             ->filters(self::filters())
             ->recordActions([

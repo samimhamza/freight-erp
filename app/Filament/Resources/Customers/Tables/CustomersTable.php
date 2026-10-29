@@ -21,6 +21,7 @@ class CustomersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with('country'))
             ->columns(self::columns())
             ->filters(self::filters())
             ->recordActions([

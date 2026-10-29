@@ -444,6 +444,7 @@ class ShipmentVolumeChart extends ChartWidget
             ->whereNull('deleted_at')
             ->whereBetween('date', [$startDate->toDateTimeString(), $endDate->toDateTimeString()])
             ->select(['id', 'date'])
+            ->toBase()
             ->get();
     }
 
@@ -458,6 +459,7 @@ class ShipmentVolumeChart extends ChartWidget
             ->whereNull('deleted_at')
             ->whereBetween('created_at', [$startDate->toDateTimeString(), $endDate->toDateTimeString()])
             ->select(['id', 'created_at'])
+            ->toBase()
             ->get();
     }
 }

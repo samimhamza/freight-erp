@@ -86,7 +86,7 @@ class RemittanceAdviceItem extends Model
                 ->preload()
                 ->searchable()
                 ->required()
-                ->visibleOn($showRemittanceAdvice),
+                ->visible($showRemittanceAdvice),
             Select::make('charge_id')
                 ->relationship('charge', 'name')
                 ->createOptionForm(ChargeForm::components())

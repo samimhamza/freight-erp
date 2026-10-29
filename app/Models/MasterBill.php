@@ -177,8 +177,28 @@ class MasterBill extends Model
         return $this->belongsTo(User::class, 'deleted_by');
     }
 
+    public function getForceDeleteRestrictions(): array
+    {
+        $reasons = [];
+        $houseBillsCount = $this->houseBills()->withTrashed()->count();
+        if ($houseBillsCount > 0) {
+            $reasons[] = "{$houseBillsCount} House Bill(s)";
+        }
+
+        $remittanceCount = $this->remittanceAdvices()->withTrashed()->count();
+        if ($remittanceCount > 0) {
+            $reasons[] = "{$remittanceCount} Remittance Advice(s)";
+        }
+
+        return $reasons;
+    }
+
     public function getTotalContainersAttribute()
     {
+        if ($this->relationLoaded('houseBills')) {
+            return (int) $this->houseBills->sum(fn ($hb) => $hb->total_containers);
+        }
+
         return Container::query()
             ->join('house_bill_containers', 'house_bill_containers.container_id', '=', 'containers.id')
             ->join('house_bills', 'house_bill_containers.house_bill_id', '=', 'house_bills.id')
@@ -190,6 +210,10 @@ class MasterBill extends Model
 
     public function getTotalVehiclesAttribute()
     {
+        if ($this->relationLoaded('houseBills')) {
+            return (int) $this->houseBills->sum(fn ($hb) => $hb->total_vehicles);
+        }
+
         return Vehicle::query()
             ->join('house_bill_containers', 'vehicles.house_bill_container_id', '=', 'house_bill_containers.id')
             ->join('house_bills', 'house_bill_containers.house_bill_id', '=', 'house_bills.id')
@@ -201,30 +225,49 @@ class MasterBill extends Model
 
     public function getTotalWeightAttribute()
     {
-        return $this->join('house_bills', 'master_bills.id', '=', 'house_bills.master_bill_id')
+        if ($this->relationLoaded('houseBills')) {
+            return (float) $this->houseBills->sum(fn ($hb) => $hb->total_weight);
+        }
+
+        return $this->newQuery()
+            ->join('house_bills', 'master_bills.id', '=', 'house_bills.master_bill_id')
             ->join('house_bill_containers', 'house_bills.id', '=', 'house_bill_containers.house_bill_id')
+            ->where('master_bills.id', $this->id)
             ->whereNull('house_bills.deleted_at')
-            ->sum('house_bill_containers.gross_weight');
+            ->whereNull('house_bill_containers.deleted_at')
+            ->sum('house_bill_containers.gross_weight') ?? 0;
     }
 
     public function getTotalVolumeAttribute()
     {
-        return $this->join('house_bills', 'master_bills.id', '=', 'house_bills.master_bill_id')
+        if ($this->relationLoaded('houseBills')) {
+            return (float) $this->houseBills->sum(fn ($hb) => $hb->total_volume);
+        }
+
+        return $this->newQuery()
+            ->join('house_bills', 'master_bills.id', '=', 'house_bills.master_bill_id')
             ->join('house_bill_containers', 'house_bills.id', '=', 'house_bill_containers.house_bill_id')
             ->join('containers', 'house_bill_containers.container_id', '=', 'containers.id')
+            ->where('master_bills.id', $this->id)
             ->whereNull('house_bills.deleted_at')
             ->whereNull('house_bill_containers.deleted_at')
             ->whereNull('containers.deleted_at')
-            ->sum('containers.volume');
+            ->sum('containers.volume') ?? 0;
     }
 
     public function getTotalPackagesAttribute()
     {
-        return $this->join('house_bills', 'master_bills.id', '=', 'house_bills.master_bill_id')
+        if ($this->relationLoaded('houseBills')) {
+            return (int) $this->houseBills->sum(fn ($hb) => $hb->total_packages);
+        }
+
+        return $this->newQuery()
+            ->join('house_bills', 'master_bills.id', '=', 'house_bills.master_bill_id')
             ->join('house_bill_containers', 'house_bills.id', '=', 'house_bill_containers.house_bill_id')
+            ->where('master_bills.id', $this->id)
             ->whereNull('house_bills.deleted_at')
             ->whereNull('house_bill_containers.deleted_at')
-            ->sum('house_bill_containers.packages');
+            ->sum('house_bill_containers.packages') ?? 0;
     }
 
     public static function getTxtContent($record): string

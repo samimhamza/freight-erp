@@ -48,7 +48,7 @@ class InvoicePdfTest extends TestCase
 
         $rendered = view('pdf.invoices.show', $viewData)->render();
 
-        $this->assertStringContainsString('ACME SHIPPING & LOGISTICS L.L.C', $rendered);
+        $this->assertStringContainsString(e('ACME SHIPPING & LOGISTICS L.L.C'), $rendered);
         $this->assertStringContainsString('123 Logistics Boulevard, Suite 500', $rendered);
         $this->assertStringContainsString('+971 4 123 4567', $rendered);
         $this->assertStringContainsString('info@acmelogistics.example.com', $rendered);
@@ -56,7 +56,7 @@ class InvoicePdfTest extends TestCase
         $this->assertStringContainsString('DEMOAEAD', $rendered);
         $this->assertStringContainsString('AE120000001234567890123', $rendered);
         $this->assertStringContainsString('12345678901234', $rendered);
-        $this->assertStringContainsString('ACME SHIPPING & LOGISTICS L.L.C', $rendered);
+        $this->assertStringContainsString(e('ACME SHIPPING & LOGISTICS L.L.C'), $rendered);
         $this->assertStringContainsString('Demo Commercial Bank', $rendered);
         $this->assertStringContainsString($invoice->houseBill->house_bill, $rendered);
         $this->assertNotEmpty($invoice->all_container_numbers);
@@ -76,7 +76,7 @@ class InvoicePdfTest extends TestCase
 
         $rendered = view('pdf.invoices.show', $viewData)->render();
 
-        $this->assertStringContainsString('ACME SHIPPING & LOGISTICS L.L.C', $rendered);
+        $this->assertStringContainsString(e('ACME SHIPPING & LOGISTICS L.L.C'), $rendered);
         $this->assertStringContainsString('info@acmelogistics.example.com', $rendered);
         $this->assertStringContainsString($invoice->customer->name, $rendered);
         $this->assertStringContainsString('House B/L', $rendered);

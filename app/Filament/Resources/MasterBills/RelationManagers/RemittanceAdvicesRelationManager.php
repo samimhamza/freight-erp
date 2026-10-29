@@ -25,6 +25,11 @@ class RemittanceAdvicesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with([
+                'carrier',
+                'masterBill',
+                'items',
+            ]))
             ->recordUrl(
                 fn ($record) => RemittanceAdviceResource::getUrl('view', ['record' => $record])
             )

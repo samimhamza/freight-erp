@@ -18,6 +18,11 @@ class RemittanceAdvicesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with([
+                'carrier',
+                'masterBill',
+                'items',
+            ]))
             ->columns(self::columns())
             ->filters(self::filters())
             ->recordActions(RemittanceAdviceResource::actions())

@@ -74,7 +74,7 @@ class InvoiceItem extends Model
                 ->preload()
                 ->searchable()
                 ->required()
-                ->visibleOn($showInvoice),
+                ->visible($showInvoice),
             Select::make('charge_id')
                 ->relationship('charge', 'name')
                 ->createOptionForm(ChargeForm::components())

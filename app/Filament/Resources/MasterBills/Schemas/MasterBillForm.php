@@ -95,7 +95,7 @@ class MasterBillForm
                         ->schema([
                             Select::make('vessel_id')
                                 ->label('Vessel')
-                                ->relationship('vessel', 'code')
+                                ->relationship('vessel', 'name')
                                 ->createOptionForm(VesselForm::components())
                                 ->required()
                                 ->getOptionLabelFromRecordUsing(fn (Vessel $record): string => "{$record->name}")

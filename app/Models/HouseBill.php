@@ -112,36 +112,81 @@ class HouseBill extends Model
         return $this->belongsTo(User::class, 'deleted_by');
     }
 
+    public function getForceDeleteRestrictions(): array
+    {
+        $reasons = [];
+        $containersCount = $this->containers()->withTrashed()->count();
+        if ($containersCount > 0) {
+            $reasons[] = "{$containersCount} Container(s)";
+        }
+
+        $invoicesCount = $this->invoices()->withTrashed()->count();
+        if ($invoicesCount > 0) {
+            $reasons[] = "{$invoicesCount} Invoice(s)";
+        }
+
+        return $reasons;
+    }
+
     public function getTotalContainersAttribute(): int
     {
+        if ($this->relationLoaded('containers')) {
+            return $this->containers->count();
+        }
+
         return (int) ($this->containers_count ?? $this->containers()->count());
     }
 
     public function getTotalVehiclesAttribute()
     {
+        if ($this->relationLoaded('containers')) {
+            return (int) $this->containers->sum(fn ($c) => $c->relationLoaded('vehicles') ? $c->vehicles->count() : $c->vehicles()->count());
+        }
+
         return $this->vehicles()->count();
     }
 
     public function getTotalWeightAttribute()
     {
-        return $this->join('house_bill_containers', 'house_bills.id', '=', 'house_bill_containers.house_bill_id')
+        if ($this->relationLoaded('containers')) {
+            return (float) $this->containers->sum('gross_weight');
+        }
+
+        return (float) ($this->newQuery()
+            ->join('house_bill_containers', 'house_bills.id', '=', 'house_bill_containers.house_bill_id')
+            ->where('house_bills.id', $this->id)
             ->whereNull('house_bills.deleted_at')
-            ->sum('house_bill_containers.gross_weight');
+            ->whereNull('house_bill_containers.deleted_at')
+            ->sum('house_bill_containers.gross_weight') ?? 0);
     }
 
     public function getTotalPackagesAttribute()
     {
-        return $this->join('house_bill_containers', 'house_bills.id', '=', 'house_bill_containers.house_bill_id')
+        if ($this->relationLoaded('containers')) {
+            return (int) $this->containers->sum('packages');
+        }
+
+        return (int) ($this->newQuery()
+            ->join('house_bill_containers', 'house_bills.id', '=', 'house_bill_containers.house_bill_id')
+            ->where('house_bills.id', $this->id)
             ->whereNull('house_bills.deleted_at')
-            ->sum('house_bill_containers.packages');
+            ->whereNull('house_bill_containers.deleted_at')
+            ->sum('house_bill_containers.packages') ?? 0);
     }
 
     public function getTotalVolumeAttribute()
     {
-        return $this->join('house_bill_containers', 'house_bills.id', '=', 'house_bill_containers.house_bill_id')
+        if ($this->relationLoaded('containers')) {
+            return (float) $this->containers->sum(fn ($c) => (float) ($c->container?->volume ?? 0));
+        }
+
+        return (float) ($this->newQuery()
+            ->join('house_bill_containers', 'house_bills.id', '=', 'house_bill_containers.house_bill_id')
             ->join('containers', 'containers.id', '=', 'house_bill_containers.container_id')
+            ->where('house_bills.id', $this->id)
             ->whereNull('house_bills.deleted_at')
+            ->whereNull('house_bill_containers.deleted_at')
             ->whereNull('containers.deleted_at')
-            ->sum('containers.volume');
+            ->sum('containers.volume') ?? 0);
     }
 }

@@ -13,6 +13,7 @@ use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
@@ -24,6 +25,15 @@ class MasterBillsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with([
+                'vessel',
+                'carrier',
+                'origin',
+                'portOfDischarge',
+                'destination',
+                'houseBills.containers.container',
+                'houseBills.containers.vehicles',
+            ]))
             ->columns(self::columns())
             ->filters(self::filters())
             ->recordActions([
@@ -53,7 +63,29 @@ class MasterBillsTable
                     ->visible(fn ($record) => ! $record->trashed()),
                 DeleteAction::make()->label(''),
                 RestoreAction::make(),
-                ForceDeleteAction::make(),
+                ForceDeleteAction::make()
+                    ->using(function ($record): bool {
+                        $reasons = $record->getForceDeleteRestrictions();
+
+                        if (! empty($reasons)) {
+                            Notification::make()
+                                ->warning()
+                                ->title('Cannot Permanently Delete')
+                                ->body('Cannot be permanently deleted because it still has associated '.implode(' and ', $reasons).'. Please delete them first.')
+                                ->persistent()
+                                ->send();
+
+                            return false;
+                        }
+
+                        try {
+                            return (bool) $record->forceDelete();
+                        } catch (\Throwable $e) {
+                            Notification::make()->danger()->title('Deletion failed')->send();
+
+                            return false;
+                        }
+                    }),
                 Action::make('activities')
                     ->label('')
                     ->icon('heroicon-o-document-text')

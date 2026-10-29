@@ -46,6 +46,22 @@ class Invoice extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $model): void {
+            if (! isset($model->status)) {
+                $model->status = InvoiceStatus::DRAFT;
+            }
+        });
+
+        static::deleting(function (self $model): void {
+            if ($model->isForceDeleting()) {
+                $model->payments()->withTrashed()->forceDelete();
+                $model->items()->withTrashed()->forceDelete();
+            }
+        });
+    }
+
     public function getHouseBillNumberAttribute(): ?string
     {
         return $this->houseBill?->house_bill ?? $this->house_bill;
@@ -94,22 +110,30 @@ class Invoice extends Model
 
     public function getTotalAttribute()
     {
-        return $this->items()
+        if ($this->relationLoaded('items')) {
+            return (float) $this->items->sum(fn ($item) => ((float) $item->quantity * (float) $item->amount) + (float) $item->vat);
+        }
+
+        return (float) ($this->items()
             ->selectRaw('SUM((quantity * amount) + vat) as total')
-            ->value('total');
+            ->value('total') ?? 0.0);
     }
 
     public function getTotalPaidAttribute()
     {
-        return $this->payments()
+        if ($this->relationLoaded('payments')) {
+            return (float) $this->payments->sum('amount');
+        }
+
+        return (float) ($this->payments()
             ->selectRaw('SUM(amount) as total_paid')
-            ->value('total_paid');
+            ->value('total_paid') ?? 0.0);
     }
 
     public function getTotalRemainingAttribute()
     {
-        $total = $this->total ?? 0;
-        $paid = $this->total_paid ?? 0;
+        $total = $this->total ?? 0.0;
+        $paid = $this->total_paid ?? 0.0;
 
         return $total - $paid;
     }

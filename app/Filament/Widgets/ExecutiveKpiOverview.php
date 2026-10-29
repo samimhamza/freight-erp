@@ -104,14 +104,16 @@ class ExecutiveKpiOverview extends BaseWidget
         $openInvoices = Invoice::query()
             ->whereNull('deleted_at')
             ->whereNotIn('status', [InvoiceStatus::PAID->value, InvoiceStatus::CANCELLED->value])
-            ->with(['items', 'payments'])
+            ->select(['id', 'status'])
+            ->selectRaw('(SELECT COALESCE(SUM((quantity * amount) + vat), 0) FROM invoice_items WHERE invoice_items.invoice_id = invoices.id AND invoice_items.deleted_at IS NULL) as total_billed')
+            ->selectRaw('(SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payments.invoice_id = invoices.id AND payments.deleted_at IS NULL) as total_paid')
             ->get();
 
         $outstandingTotal = 0.0;
         $overdueCount = 0;
 
         foreach ($openInvoices as $invoice) {
-            $remaining = (float) $invoice->total_remaining;
+            $remaining = (float) $invoice->total_billed - (float) $invoice->total_paid;
             if ($remaining > 0) {
                 $outstandingTotal += $remaining;
             }
@@ -246,32 +248,36 @@ class ExecutiveKpiOverview extends BaseWidget
      */
     protected function getReceivablesSparkline(): array
     {
-        $sparkline = [];
-
+        $months = [];
         for ($i = 5; $i >= 0; $i--) {
             $date = now()->subMonths($i);
-            $start = $date->copy()->startOfMonth()->toDateString();
-            $end = $date->copy()->endOfMonth()->toDateString();
-
-            $invoices = Invoice::query()
-                ->whereNull('deleted_at')
-                ->whereNotIn('status', [InvoiceStatus::PAID->value, InvoiceStatus::CANCELLED->value])
-                ->whereBetween('invoice_date', [$start, $end])
-                ->with(['items', 'payments'])
-                ->get();
-
-            $unpaid = 0.0;
-            foreach ($invoices as $inv) {
-                $rem = (float) $inv->total_remaining;
-                if ($rem > 0) {
-                    $unpaid += $rem;
-                }
-            }
-
-            $sparkline[] = round($unpaid, 2);
+            $key = $date->format('Y-m');
+            $months[$key] = 0.0;
         }
 
-        return $sparkline;
+        $earliestDate = now()->subMonths(5)->startOfMonth()->toDateString();
+        $latestDate = now()->endOfMonth()->toDateString();
+
+        $invoices = Invoice::query()
+            ->whereNull('deleted_at')
+            ->whereNotIn('status', [InvoiceStatus::PAID->value, InvoiceStatus::CANCELLED->value])
+            ->whereBetween('invoice_date', [$earliestDate, $latestDate])
+            ->select(['id', 'invoice_date'])
+            ->selectRaw('(SELECT COALESCE(SUM((quantity * amount) + vat), 0) FROM invoice_items WHERE invoice_items.invoice_id = invoices.id AND invoice_items.deleted_at IS NULL) as total_billed')
+            ->selectRaw('(SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payments.invoice_id = invoices.id AND payments.deleted_at IS NULL) as total_paid')
+            ->get();
+
+        foreach ($invoices as $inv) {
+            $monthKey = Carbon::parse($inv->invoice_date)->format('Y-m');
+            if (isset($months[$monthKey])) {
+                $rem = (float) $inv->total_billed - (float) $inv->total_paid;
+                if ($rem > 0) {
+                    $months[$monthKey] += $rem;
+                }
+            }
+        }
+
+        return array_map(fn ($val) => round($val, 2), array_values($months));
     }
 
     /**

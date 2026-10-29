@@ -35,6 +35,15 @@ class MasterBillsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with([
+                'vessel',
+                'carrier',
+                'origin',
+                'portOfDischarge',
+                'destination',
+                'houseBills.containers.container',
+                'houseBills.containers.vehicles',
+            ]))
             ->recordTitleAttribute('id')
             ->columns(MasterBillsTable::columns())
             ->filters(MasterBillsTable::filters())

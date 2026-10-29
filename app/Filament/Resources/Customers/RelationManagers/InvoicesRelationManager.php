@@ -23,6 +23,11 @@ class InvoicesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with([
+                'customer',
+                'houseBill.containers.container',
+                'items',
+            ]))
             ->recordUrl(
                 fn ($record) => InvoiceResource::getUrl('view', ['record' => $record])
             )
