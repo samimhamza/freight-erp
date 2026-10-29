@@ -47,8 +47,6 @@ class VesselsTable
                 ->searchable(),
             TextColumn::make('voyage')
                 ->sortable(),
-            TextColumn::make('imo')
-                ->searchable(),
             TextColumn::make('master_bills_count')
                 ->counts('masterBills')
                 ->label('Total Master Bills'),

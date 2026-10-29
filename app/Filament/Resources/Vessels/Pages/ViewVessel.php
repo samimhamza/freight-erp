@@ -45,8 +45,6 @@ class ViewVessel extends ViewRecord
                         TextEntry::make('name'),
                         TextEntry::make('voyage')
                             ->visible(fn ($state) => $state),
-                        TextEntry::make('imo')
-                            ->visible(fn ($state) => $state),
                         ...HasTimestampsAndUsers::timestampsWithUsersInfolist(),
                     ])
                     ->columns(3),

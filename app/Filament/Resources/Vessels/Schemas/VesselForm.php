@@ -25,9 +25,6 @@ class VesselForm
                     TextInput::make('voyage')
                         ->required()
                         ->maxLength(32),
-                    TextInput::make('imo')
-                        ->required()
-                        ->maxLength(64),
                 ]),
         ];
     }

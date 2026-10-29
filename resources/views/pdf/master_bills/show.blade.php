@@ -34,7 +34,7 @@
                         @if ($masterBill->vessel)
                             <tr>
                                 <td class="muted">Vessel</td>
-                                <td class="text-right">{{ $masterBill->vessel->name }} / {{ $masterBill->vessel->voyage }} / {{ $masterBill->vessel->imo }}</td>
+                                <td class="text-right">{{ $masterBill->vessel->name }} / {{ $masterBill->vessel->voyage }}</td>
                             </tr>
                         @endif
                         @if ($masterBill->carrier)

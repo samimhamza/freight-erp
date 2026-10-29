@@ -149,10 +149,6 @@
                                 <td class="text-right">
                                     {{ $masterBill->vessel->name }} /
                                     {{ $masterBill->vessel->voyage }}
-                                    @if ($masterBill->vessel->imo)
-                                        <span class="muted">(IMO:
-                                            {{ $masterBill->vessel->imo }})</span>
-                                    @endif
                                 </td>
                             </tr>
                         @endif

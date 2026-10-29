@@ -158,7 +158,6 @@ class DemoDataSeeder extends Seeder
         $vessel = Vessel::create([
             'name' => 'MSC PACIFIC',
             'voyage' => 'VOY-2026-014',
-            'imo' => 'IMO9876543',
             'created_by' => $userId,
             'updated_by' => $userId,
         ]);

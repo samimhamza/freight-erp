@@ -135,7 +135,7 @@ class ViewMasterBill extends ViewRecord
                         ->visible(fn ($state) => $state),
                     TextEntry::make('vessel.name')
                         ->formatStateUsing(function ($state, $record) {
-                            return $state.' / '.$record->vessel->voyage.' / '.$record->vessel->imo;
+                            return $state.' / '.$record->vessel->voyage;
                         }),
                     TextEntry::make('origin.code')
                         ->formatStateUsing(function ($state, $record) {
