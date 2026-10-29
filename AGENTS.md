@@ -552,4 +552,15 @@ Key config options in `config/activitylog.php`:
 - `actions.log_activity`: Action class for logging activities
 - `actions.clean_log`: Action class for cleaning old activities
 
+=== performance & safe operations rules ===
+
+# Performance & Safe Operations Guidelines
+
+1. **Eliminate N+1 Queries**: Every table and relation manager displaying relationships must use `modifyQueryUsing(fn ($q) => $q->with([...]))`.
+2. **In-Memory Fallbacks for Model Accessors**: Check `if ($this->relationLoaded('relationName'))` in computed attributes before executing fallback SQL queries.
+3. **Database-Side Aggregations**: Calculate sums, averages, and counts in SQL rather than loading records into PHP memory.
+4. **Memory Efficiency**: Use `->toBase()->get()` or `cursor()` when processing records for charts/exports.
+5. **Safe Force Deletes**: Implement `getForceDeleteRestrictions(): array` and user notifications on models with `restrictOnDelete()` foreign keys.
+6. **MySQL Indexing Rules**: Foreign keys are automatically indexed by MySQL InnoDB; do not create duplicate indexes. Always create migrations for non-foreign-key columns heavily queried in filters (`status`, `invoice_date`, `date`, `ata`).
+
 </laravel-boost-guidelines>
