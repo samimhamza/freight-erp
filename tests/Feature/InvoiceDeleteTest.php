@@ -5,12 +5,14 @@ namespace Tests\Feature;
 use App\Enums\InvoiceStatus;
 use App\Enums\InvoiceType;
 use App\Filament\Resources\Invoices\InvoiceResource;
+use App\Filament\Resources\Invoices\Pages\ViewInvoice;
 use App\Models\Invoice;
 use App\Models\User;
 use Database\Seeders\DemoDataSeeder;
 use Filament\Actions\DeleteAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class InvoiceDeleteTest extends TestCase
@@ -84,5 +86,36 @@ class InvoiceDeleteTest extends TestCase
         foreach ($paymentIds as $paymentId) {
             $this->assertDatabaseMissing('payments', ['id' => $paymentId]);
         }
+    }
+
+    public function test_delete_action_is_visible_on_view_page_for_partially_paid_invoice(): void
+    {
+        Gate::before(fn () => true);
+        $this->actingAs($this->user);
+
+        $partiallyPaidInvoice = Invoice::where('status', InvoiceStatus::PARTIALLY_PAID)->first();
+        $this->assertNotNull($partiallyPaidInvoice);
+
+        Livewire::test(ViewInvoice::class, ['record' => $partiallyPaidInvoice->getKey()])
+            ->assertActionVisible('delete');
+    }
+
+    public function test_delete_action_hidden_on_view_page_when_user_lacks_permission(): void
+    {
+        Gate::before(function ($user, $ability) {
+            if ($ability === 'delete' || str_starts_with($ability, 'Delete')) {
+                return false;
+            }
+
+            return true;
+        });
+
+        $this->actingAs($this->user);
+
+        $partiallyPaidInvoice = Invoice::where('status', InvoiceStatus::PARTIALLY_PAID)->first();
+        $this->assertNotNull($partiallyPaidInvoice);
+
+        Livewire::test(ViewInvoice::class, ['record' => $partiallyPaidInvoice->getKey()])
+            ->assertActionHidden('delete');
     }
 }

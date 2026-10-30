@@ -85,8 +85,7 @@ class ViewRemittanceAdvice extends ViewRecord
                 ->url(fn (): string => route('remittance-advices.print', $this->getRecord()))
                 ->openUrlInNewTab()
                 ->authorize('print'),
-            DeleteAction::make()
-                ->visible(RemittanceAdvice::showActions($this->getRecord())),
+            RemittanceAdviceResource::configureDeleteAction(DeleteAction::make()),
         ];
     }
 

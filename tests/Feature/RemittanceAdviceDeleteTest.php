@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\InvoiceStatus;
+use App\Filament\Resources\RemittanceAdvices\Pages\ViewRemittanceAdvice;
 use App\Filament\Resources\RemittanceAdvices\RemittanceAdviceResource;
 use App\Models\RemittanceAdvice;
 use App\Models\RemittancePayment;
@@ -11,6 +12,7 @@ use Database\Seeders\DemoDataSeeder;
 use Filament\Actions\DeleteAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class RemittanceAdviceDeleteTest extends TestCase
@@ -86,5 +88,36 @@ class RemittanceAdviceDeleteTest extends TestCase
         foreach ($paymentIds as $paymentId) {
             $this->assertDatabaseMissing('remittance_payments', ['id' => $paymentId]);
         }
+    }
+
+    public function test_delete_action_is_visible_on_view_page_for_partially_paid_remittance_advice(): void
+    {
+        Gate::before(fn () => true);
+        $this->actingAs($this->user);
+
+        $advice = RemittanceAdvice::first();
+        $advice->update(['status' => InvoiceStatus::PARTIALLY_PAID]);
+
+        Livewire::test(ViewRemittanceAdvice::class, ['record' => $advice->getKey()])
+            ->assertActionVisible('delete');
+    }
+
+    public function test_delete_action_hidden_on_view_page_when_user_lacks_permission(): void
+    {
+        Gate::before(function ($user, $ability) {
+            if ($ability === 'delete' || str_starts_with($ability, 'Delete')) {
+                return false;
+            }
+
+            return true;
+        });
+
+        $this->actingAs($this->user);
+
+        $advice = RemittanceAdvice::first();
+        $advice->update(['status' => InvoiceStatus::PARTIALLY_PAID]);
+
+        Livewire::test(ViewRemittanceAdvice::class, ['record' => $advice->getKey()])
+            ->assertActionHidden('delete');
     }
 }

@@ -84,8 +84,7 @@ class ViewInvoice extends ViewRecord
                 ->url(fn (): string => route('invoices.print', $this->getRecord()))
                 ->openUrlInNewTab()
                 ->authorize('print'),
-            DeleteAction::make()
-                ->visible(Invoice::showActions($this->getRecord())),
+            InvoiceResource::configureDeleteAction(DeleteAction::make()),
         ];
     }
 

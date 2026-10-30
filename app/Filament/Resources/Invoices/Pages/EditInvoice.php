@@ -17,7 +17,7 @@ class EditInvoice extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            InvoiceResource::configureDeleteAction(DeleteAction::make()),
         ];
     }
 

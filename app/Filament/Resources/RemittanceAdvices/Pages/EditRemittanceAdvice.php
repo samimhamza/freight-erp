@@ -16,7 +16,7 @@ class EditRemittanceAdvice extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            RemittanceAdviceResource::configureDeleteAction(DeleteAction::make()),
         ];
     }
 
